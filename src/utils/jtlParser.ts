@@ -269,7 +269,10 @@ export class JTLParser {
   }
 
   calculateMetrics(): PerformanceMetrics {
+    console.log('calculateMetrics called with', this.records.length, 'records');
+    
     if (this.records.length === 0) {
+      console.log('No records found, returning zero metrics');
       return {
         avgResponseTime: 0,
         maxResponseTime: 0,
@@ -286,9 +289,25 @@ export class JTLParser {
     }
 
     try {
-      const responseTimes = this.records.map(r => r.elapsed).filter(time => !isNaN(time) && time >= 0);
+      // Debug: log sample records
+      console.log('Sample records:', this.records.slice(0, 3));
+      
+      // More robust filtering - handle different data types
+      const responseTimes = this.records
+        .map(r => {
+          // Handle both number and string values
+          const elapsed = typeof r.elapsed === 'string' ? parseFloat(r.elapsed) : r.elapsed;
+          return elapsed;
+        })
+        .filter(time => time !== undefined && time !== null && !isNaN(time) && time >= 0);
+      
+      console.log('Valid response times found:', responseTimes.length, 'out of', this.records.length);
+      console.log('Sample response times:', responseTimes.slice(0, 5));
       
       if (responseTimes.length === 0) {
+        console.log('No valid response times found, checking raw elapsed values...');
+        console.log('Raw elapsed values:', this.records.slice(0, 5).map(r => ({ elapsed: r.elapsed, type: typeof r.elapsed })));
+        
         return {
           avgResponseTime: 0,
           maxResponseTime: 0,
@@ -304,39 +323,50 @@ export class JTLParser {
         };
       }
 
-      const successfulRequests = this.records.filter(r => r.success).length;
+      const successfulRequests = this.records.filter(r => r.success === true).length;
       const failedRequests = this.records.length - successfulRequests;
       
       // Sort response times for percentile calculations
       const sortedResponseTimes = [...responseTimes].sort((a, b) => a - b);
       
-      const timestamps = this.records.map(r => r.timestamp).filter(t => !isNaN(t) && t > 0);
+      // More robust timestamp handling
+      const timestamps = this.records
+        .map(r => {
+          const timestamp = typeof r.timestamp === 'string' ? parseFloat(r.timestamp) : r.timestamp;
+          return timestamp;
+        })
+        .filter(t => t !== undefined && t !== null && !isNaN(t) && t > 0);
+      
       const testDuration = timestamps.length > 1 
         ? (Math.max(...timestamps) - Math.min(...timestamps)) / 1000 
         : 1; // Default to 1 second if no valid duration
       
-      return {
-        avgResponseTime: responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length,
-        maxResponseTime: Math.max(...responseTimes),
-        minResponseTime: Math.min(...responseTimes),
-        throughput: testDuration > 0 ? this.records.length / testDuration : 0,
-        errorRate: (failedRequests / this.records.length) * 100,
+      const metrics = {
+        avgResponseTime: Math.round(responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length),
+        maxResponseTime: Math.round(Math.max(...responseTimes)),
+        minResponseTime: Math.round(Math.min(...responseTimes)),
+        throughput: Math.round((testDuration > 0 ? this.records.length / testDuration : 0) * 100) / 100,
+        errorRate: Math.round((failedRequests / this.records.length) * 100 * 100) / 100,
         totalRequests: this.records.length,
         successfulRequests,
         failedRequests,
-        p90ResponseTime: this.calculatePercentile(sortedResponseTimes, 90),
-        p95ResponseTime: this.calculatePercentile(sortedResponseTimes, 95),
-        p99ResponseTime: this.calculatePercentile(sortedResponseTimes, 99)
+        p90ResponseTime: Math.round(this.calculatePercentile(sortedResponseTimes, 90)),
+        p95ResponseTime: Math.round(this.calculatePercentile(sortedResponseTimes, 95)),
+        p99ResponseTime: Math.round(this.calculatePercentile(sortedResponseTimes, 99))
       };
+      
+      console.log('Calculated metrics:', metrics);
+      return metrics;
     } catch (error) {
       console.error('Error calculating metrics:', error);
+      console.error('Records causing error:', this.records.slice(0, 3));
       return {
         avgResponseTime: 0,
         maxResponseTime: 0,
         minResponseTime: 0,
         throughput: 0,
         errorRate: 0,
-        totalRequests: 0,
+        totalRequests: this.records.length,
         successfulRequests: 0,
         failedRequests: 0,
         p90ResponseTime: 0,
