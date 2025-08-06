@@ -4,6 +4,7 @@ import { MetricsOverview } from "@/components/MetricsOverview";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { ChartSelector, ChartConfig } from "@/components/ChartSelector";
 import { TransactionTable } from "@/components/TransactionTable";
+import { TopErrorsSection } from "@/components/TopErrorsSection";
 import { ExportButton } from "@/components/ExportButton";
 import { JTLParser } from "@/utils/jtlParser";
 import { toast } from "@/hooks/use-toast";
@@ -121,6 +122,16 @@ const Index = () => {
     }
   }, [parser?.getRecords().length]);
 
+  const topErrors = useMemo(() => {
+    if (!parser) return [];
+    try {
+      return parser.getTopErrors() || [];
+    } catch (error) {
+      console.error('Error getting top errors:', error);
+      return [];
+    }
+  }, [parser?.getRecords().length]);
+
   if (!parser) {
     return (
       <div className="bg-background">
@@ -212,6 +223,9 @@ const Index = () => {
       <div className="container mx-auto px-6 py-8 space-y-8">
         {/* Metrics Overview */}
         {metrics && <MetricsOverview metrics={metrics} />}
+
+        {/* Top Errors Section */}
+        <TopErrorsSection errors={topErrors} />
 
         {/* Chart Selection */}
         <ChartSelector 

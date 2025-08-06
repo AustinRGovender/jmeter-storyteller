@@ -67,6 +67,14 @@ export interface ChartDataPoint {
   bandwidth: number;
 }
 
+export interface ErrorAnalysis {
+  errorMessage: string;
+  responseCode: string;
+  count: number;
+  percentage: number;
+  affectedTransactions: string[];
+}
+
 export class JTLParser {
   private records: JTLRecord[] = [];
   private lastParseResult?: ParseResult;
@@ -569,5 +577,55 @@ export class JTLParser {
       errorRate: (stats.errorCount / stats.count) * 100,
       errorCount: stats.errorCount
     }));
+  }
+
+  getTopErrors(): ErrorAnalysis[] {
+    // Filter only failed requests
+    const failedRequests = this.records.filter(record => !record.success);
+    
+    if (failedRequests.length === 0) {
+      return [];
+    }
+
+    // Group errors by combination of response code and failure message
+    const errorGroups = new Map<string, {
+      responseCode: string;
+      errorMessage: string;
+      count: number;
+      affectedTransactions: Set<string>;
+    }>();
+
+    failedRequests.forEach(record => {
+      const errorMessage = record.failureMessage || 'Unknown error';
+      const responseCode = record.responseCode || 'Unknown';
+      const errorKey = `${responseCode}:${errorMessage}`;
+
+      if (!errorGroups.has(errorKey)) {
+        errorGroups.set(errorKey, {
+          responseCode,
+          errorMessage,
+          count: 0,
+          affectedTransactions: new Set()
+        });
+      }
+
+      const errorGroup = errorGroups.get(errorKey)!;
+      errorGroup.count++;
+      errorGroup.affectedTransactions.add(record.label);
+    });
+
+    // Convert to ErrorAnalysis array and sort by count
+    const totalErrors = failedRequests.length;
+    const errorAnalysis: ErrorAnalysis[] = Array.from(errorGroups.values())
+      .map(group => ({
+        errorMessage: group.errorMessage,
+        responseCode: group.responseCode,
+        count: group.count,
+        percentage: (group.count / totalErrors) * 100,
+        affectedTransactions: Array.from(group.affectedTransactions)
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return errorAnalysis;
   }
 }
