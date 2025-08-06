@@ -1,73 +1,84 @@
-# Welcome to your Lovable project
+# JMeter Performance Analyzer
 
-## Project info
+A modern, client-side web application for analyzing JMeter JTL result files. Generate stunning, interactive performance reports with comprehensive metrics and visualizations.
 
-**URL**: https://lovable.dev/projects/0cdc1233-c49e-4aab-9c80-b128dadb8c06
+## Features
 
-## How can I edit this code?
+- **Drag & Drop Interface**: Simply drop your JTL files to start analysis
+- **Interactive Charts**: Response time trends, throughput analysis, and error rate visualization
+- **Comprehensive Metrics**: Response times, throughput, error rates, and transaction analysis
+- **Export Reports**: Generate self-contained HTML reports for sharing
+- **Client-Side Processing**: All data processing happens in your browser - no server uploads required
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
 
-There are several ways of editing your application.
+## Supported File Formats
 
-**Use Lovable**
+- JTL (JMeter Test Log) files
+- CSV format with JMeter column headers
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0cdc1233-c49e-4aab-9c80-b128dadb8c06) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Online Version
 
-**Use your preferred IDE**
+Visit the live application and start analyzing your JMeter results immediately.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Local Development
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd jmeter-performance-analyzer
+```
 
-Follow these steps:
+2. Install dependencies:
+```bash
+npm install
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+4. Open your browser and navigate to `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## How to Use
 
-**Use GitHub Codespaces**
+1. **Upload JTL File**: Drag and drop your JMeter JTL file onto the upload area
+2. **View Analysis**: Explore the automatically generated charts and metrics
+3. **Review Transactions**: Examine detailed transaction-level performance data
+4. **Export Report**: Click the export button to download a standalone HTML report
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Technology Stack
 
-## What technologies are used for this project?
+- **React** - Frontend framework
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Modern styling framework
+- **Recharts** - Interactive chart library
+- **Vite** - Fast build tool and development server
 
-This project is built with:
+## Performance Metrics
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The analyzer provides insights into:
 
-## How can I deploy this project?
+- **Response Times**: Min, max, average, and percentile analysis
+- **Throughput**: Requests per second over time
+- **Error Analysis**: Error rates and failure patterns
+- **Transaction Performance**: Individual transaction metrics
+- **Load Patterns**: Request distribution and timing analysis
 
-Simply open [Lovable](https://lovable.dev/projects/0cdc1233-c49e-4aab-9c80-b128dadb8c06) and click on Share -> Publish.
+## Browser Compatibility
 
-## Can I connect a custom domain to my Lovable project?
+Supports all modern browsers including:
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
 
-Yes, you can!
+## Contributing
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Contributions are welcome! Please feel free to submit issues and pull requests.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## License
+
+This project is open source and available under the MIT License.
