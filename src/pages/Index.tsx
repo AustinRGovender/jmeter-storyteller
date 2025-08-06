@@ -20,14 +20,28 @@ const Index = () => {
     try {
       const content = await file.text();
       const newParser = new JTLParser();
-      const records = newParser.parseFile(content);
+      const parseResult = newParser.parseFile(content);
       
-      if (records.length === 0) {
+      if (!parseResult.success) {
+        const debugInfo = parseResult.debugInfo;
+        console.log('Parse failed. Debug info:', debugInfo);
+        
         toast({
           title: "Invalid File",
-          description: "No valid performance data found in the uploaded file.",
+          description: parseResult.error || "No valid performance data found in the uploaded file.",
           variant: "destructive",
         });
+        
+        // Show detailed debug information in console
+        console.log(`File parsing details:
+          - Total lines: ${debugInfo.totalLines}
+          - Header: ${debugInfo.headerLine}
+          - Detected delimiter: "${debugInfo.detectedDelimiter}"
+          - Detected headers: ${debugInfo.detectedHeaders.join(', ')}
+          - Parsed records: ${debugInfo.parsedRecords}
+          - Valid records: ${debugInfo.validRecords}
+          - Sample record:`, debugInfo.sampleRecord);
+        
         setIsProcessing(false);
         return;
       }
@@ -35,9 +49,10 @@ const Index = () => {
       setParser(newParser);
       toast({
         title: "File Processed Successfully",
-        description: `Loaded ${records.length.toLocaleString()} performance records from ${file.name}`,
+        description: `Loaded ${parseResult.records.length.toLocaleString()} performance records from ${file.name}`,
       });
     } catch (error) {
+      console.error('File processing error:', error);
       toast({
         title: "Processing Error",
         description: "Failed to process the JTL file. Please ensure it's a valid JMeter results file.",
