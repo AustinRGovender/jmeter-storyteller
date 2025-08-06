@@ -57,8 +57,11 @@ export interface ChartDataPoint {
 export class JTLParser {
   private records: JTLRecord[] = [];
   private lastParseResult?: ParseResult;
+  private metricsCache?: PerformanceMetrics;
 
   parseFile(content: string): ParseResult {
+    this.records = [];
+    this.metricsCache = undefined; // Clear cache when parsing new file
     console.log('Starting JTL file parsing...');
     
     const lines = content.trim().split('\n');
@@ -269,6 +272,11 @@ export class JTLParser {
   }
 
   calculateMetrics(): PerformanceMetrics {
+    // Return cached metrics if available
+    if (this.metricsCache) {
+      return this.metricsCache;
+    }
+    
     console.log('calculateMetrics called with', this.records.length, 'records');
     
     if (this.records.length === 0) {
@@ -356,6 +364,7 @@ export class JTLParser {
       };
       
       console.log('Calculated metrics:', metrics);
+      this.metricsCache = metrics; // Cache the result
       return metrics;
     } catch (error) {
       console.error('Error calculating metrics:', error);

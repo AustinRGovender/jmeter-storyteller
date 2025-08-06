@@ -63,9 +63,42 @@ const Index = () => {
     }
   };
 
-  const metrics = useMemo(() => parser?.calculateMetrics(), [parser]);
-  const chartData = useMemo(() => parser?.generateChartData(), [parser]);
-  const transactions = useMemo(() => parser?.getTransactionBreakdown() || [], [parser]);
+  const metrics = useMemo(() => {
+    if (!parser) return null;
+    try {
+      return parser.calculateMetrics();
+    } catch (error) {
+      console.error('Error calculating metrics:', error);
+      return {
+        avgResponseTime: 0,
+        maxResponseTime: 0,
+        throughput: 0,
+        errorRate: 0,
+        totalRequests: parser.getRecords().length,
+        successfulRequests: 0
+      };
+    }
+  }, [parser?.getRecords().length]); // Use records length instead of parser instance
+  
+  const chartData = useMemo(() => {
+    if (!parser) return null;
+    try {
+      return parser.generateChartData();
+    } catch (error) {
+      console.error('Error generating chart data:', error);
+      return [];
+    }
+  }, [parser?.getRecords().length]);
+  
+  const transactions = useMemo(() => {
+    if (!parser) return [];
+    try {
+      return parser.getTransactionBreakdown() || [];
+    } catch (error) {
+      console.error('Error getting transaction breakdown:', error);
+      return [];
+    }
+  }, [parser?.getRecords().length]);
 
   if (!parser) {
     return (
