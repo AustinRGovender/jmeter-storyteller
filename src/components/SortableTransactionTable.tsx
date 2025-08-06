@@ -20,7 +20,7 @@ interface TransactionTableProps {
 type SortField = 'label' | 'count' | 'avgResponseTime' | 'errorRate' | 'errorCount';
 type SortDirection = 'asc' | 'desc';
 
-export const TransactionTable = ({ transactions }: TransactionTableProps) => {
+export const SortableTransactionTable = ({ transactions }: TransactionTableProps) => {
   const [sortField, setSortField] = useState<SortField>('count');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 

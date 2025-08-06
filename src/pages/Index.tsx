@@ -3,7 +3,7 @@ import { FileDropZone } from "@/components/FileDropZone";
 import { MetricsOverview } from "@/components/MetricsOverview";
 import { PerformanceChart } from "@/components/PerformanceChart";
 import { ChartSelector, ChartConfig } from "@/components/ChartSelector";
-import { TransactionTable } from "@/components/SortableTransactionTable";
+import { SortableTransactionTable } from "@/components/SortableTransactionTable";
 import { TopErrorsSection } from "@/components/ExpandableTopErrors";
 import { ExportButton } from "@/components/ExportButton";
 import { useApp } from "@/contexts/AppContext";
@@ -203,7 +203,7 @@ const Index = () => {
         )}
 
         {/* Transaction Table */}
-        <TransactionTable transactions={transactions} />
+        <SortableTransactionTable transactions={transactions} />
       </div>
     </div>
   );
