@@ -6,6 +6,8 @@ interface AppContextType {
   parser: JTLParser | null;
   fileName: string;
   isProcessing: boolean;
+  showResetConfirmation: boolean;
+  setShowResetConfirmation: (show: boolean) => void;
   handleFileUpload: (file: File) => Promise<void>;
   handleReset: () => void;
 }
@@ -28,6 +30,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   const [parser, setParser] = useState<JTLParser | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
 
   const handleFileUpload = async (file: File) => {
     setIsProcessing(true);
@@ -95,6 +98,8 @@ export const AppProvider = ({ children }: AppProviderProps) => {
         parser,
         fileName,
         isProcessing,
+        showResetConfirmation,
+        setShowResetConfirmation,
         handleFileUpload,
         handleReset,
       }}

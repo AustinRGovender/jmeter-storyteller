@@ -7,9 +7,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/components/theme-provider"
+import { toast } from "@/hooks/use-toast"
 
 export function ThemeToggle() {
   const { setTheme } = useTheme()
+
+  const handleThemeChange = (theme: "light" | "dark" | "system") => {
+    setTheme(theme)
+    toast({
+      title: "Theme Updated",
+      description: `Switched to ${theme} theme`,
+      duration: 2000,
+    })
+  }
 
   return (
     <DropdownMenu>
@@ -20,14 +30,14 @@ export function ThemeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+      <DropdownMenuContent align="end" className="bg-popover border-border">
+        <DropdownMenuItem onClick={() => handleThemeChange("light")} className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem onClick={() => handleThemeChange("dark")} className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">
           Dark
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        <DropdownMenuItem onClick={() => handleThemeChange("system")} className="text-foreground hover:bg-muted focus:bg-muted focus:text-foreground">
           System
         </DropdownMenuItem>
       </DropdownMenuContent>

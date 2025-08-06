@@ -103,20 +103,20 @@ export const ChartSelector = ({ charts, onChartsChange }: ChartSelectorProps) =>
                     <h3 className="font-medium text-foreground">{category}</h3>
                     <div className="flex gap-2">
                       <Button
-                        variant="ghost"
+                        variant="secondary"
                         size="sm"
                         onClick={() => handleSelectAll(category, true)}
                         disabled={allEnabled}
-                        className="text-xs"
+                        className="text-xs text-foreground bg-secondary hover:bg-secondary/80"
                       >
                         All
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="secondary"
                         size="sm"
                         onClick={() => handleSelectAll(category, false)}
                         disabled={enabledInCategory === 0}
-                        className="text-xs"
+                        className="text-xs text-foreground bg-secondary hover:bg-secondary/80"
                       >
                         None
                       </Button>
@@ -135,7 +135,7 @@ export const ChartSelector = ({ charts, onChartsChange }: ChartSelectorProps) =>
                         />
                         <label
                           htmlFor={chart.id}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1 text-foreground"
                         >
                           {chart.title}
                         </label>

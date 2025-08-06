@@ -3,13 +3,14 @@ import { Link, useLocation } from "react-router-dom";
 import { BarChart3, Menu, X, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 import { useApp } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const { parser, handleReset } = useApp();
+  const { parser, fileName, showResetConfirmation, setShowResetConfirmation, handleReset } = useApp();
 
   const hasData = !!parser;
 
@@ -30,7 +31,7 @@ export const Navbar = () => {
             {hasData && (
               <Button
                 variant="outline"
-                onClick={handleReset}
+                onClick={() => setShowResetConfirmation(true)}
                 className="flex items-center space-x-2"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -47,7 +48,7 @@ export const Navbar = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleReset}
+                onClick={() => setShowResetConfirmation(true)}
                 className="flex items-center space-x-2"
               >
                 <RotateCcw className="w-4 h-4" />
@@ -75,7 +76,7 @@ export const Navbar = () => {
               <Button
                 variant="outline"
                 onClick={() => {
-                  handleReset();
+                  setShowResetConfirmation(true);
                   setIsMobileMenuOpen(false);
                 }}
                 className="w-full flex items-center justify-center space-x-2"
@@ -87,6 +88,19 @@ export const Navbar = () => {
           </div>
         )}
       </div>
+
+      <ConfirmationDialog
+        open={showResetConfirmation}
+        onOpenChange={setShowResetConfirmation}
+        onConfirm={() => {
+          handleReset();
+          setShowResetConfirmation(false);
+        }}
+        title="Reset Analysis Data"
+        description={`Are you sure you want to reset all analysis data? This will clear the loaded file "${fileName}" and all generated reports.`}
+        confirmText="Reset"
+        cancelText="Cancel"
+      />
     </nav>
   );
 };
