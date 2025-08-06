@@ -359,46 +359,79 @@ export class JTLParser {
   generateChartData(bucketSize: number = 30): ChartDataPoint[] {
     if (this.records.length === 0) return [];
 
-    const minTimestamp = Math.min(...this.records.map(r => r.timestamp));
-    const maxTimestamp = Math.max(...this.records.map(r => r.timestamp));
-    const bucketDuration = bucketSize * 1000; // Convert to milliseconds
-    
-    const buckets: Map<number, { responses: number[], errors: number }> = new Map();
-    
-    // Group records into time buckets
-    this.records.forEach(record => {
-      const bucketKey = Math.floor((record.timestamp - minTimestamp) / bucketDuration);
+    try {
+      // Filter out invalid timestamps and records
+      const validRecords = this.records.filter(record => 
+        record.timestamp && 
+        !isNaN(record.timestamp) && 
+        record.timestamp > 0 &&
+        record.elapsed !== undefined &&
+        !isNaN(record.elapsed)
+      );
+
+      if (validRecords.length === 0) return [];
+
+      const timestamps = validRecords.map(r => r.timestamp);
+      const minTimestamp = Math.min(...timestamps);
+      const maxTimestamp = Math.max(...timestamps);
       
-      if (!buckets.has(bucketKey)) {
-        buckets.set(bucketKey, { responses: [], errors: 0 });
+      // Prevent division by zero or negative bucket duration
+      if (bucketSize <= 0 || minTimestamp >= maxTimestamp) {
+        return [{
+          timestamp: new Date(minTimestamp).toLocaleTimeString(),
+          responseTime: Math.round(validRecords[0].elapsed),
+          throughput: validRecords.length,
+          errors: validRecords.filter(r => !r.success).length
+        }];
       }
+
+      const bucketDuration = bucketSize * 1000; // Convert to milliseconds
+      const buckets: Map<number, { responses: number[], errors: number }> = new Map();
       
-      const bucket = buckets.get(bucketKey)!;
-      bucket.responses.push(record.elapsed);
-      if (!record.success) {
-        bucket.errors++;
-      }
-    });
-    
-    // Convert buckets to chart data
-    const chartData: ChartDataPoint[] = [];
-    
-    for (const [bucketKey, bucket] of buckets.entries()) {
-      const timestamp = new Date(minTimestamp + (bucketKey * bucketDuration));
-      const avgResponseTime = bucket.responses.length > 0 
-        ? bucket.responses.reduce((sum, time) => sum + time, 0) / bucket.responses.length 
-        : 0;
-      const throughput = bucket.responses.length / bucketSize; // requests per second
-      
-      chartData.push({
-        timestamp: timestamp.toLocaleTimeString(),
-        responseTime: Math.round(avgResponseTime),
-        throughput: Math.round(throughput * 10) / 10, // Round to 1 decimal
-        errors: bucket.errors
+      // Group records into time buckets
+      validRecords.forEach(record => {
+        const timeDiff = record.timestamp - minTimestamp;
+        const bucketKey = Math.floor(timeDiff / bucketDuration);
+        
+        // Ensure bucketKey is valid
+        if (bucketKey < 0 || !isFinite(bucketKey)) return;
+        
+        if (!buckets.has(bucketKey)) {
+          buckets.set(bucketKey, { responses: [], errors: 0 });
+        }
+        
+        const bucket = buckets.get(bucketKey)!;
+        bucket.responses.push(record.elapsed);
+        if (!record.success) {
+          bucket.errors++;
+        }
       });
+      
+      // Convert buckets to chart data
+      const chartData: ChartDataPoint[] = [];
+      
+      for (const [bucketKey, bucket] of buckets.entries()) {
+        if (!isFinite(bucketKey) || bucketKey < 0) continue;
+        
+        const timestamp = new Date(minTimestamp + (bucketKey * bucketDuration));
+        const avgResponseTime = bucket.responses.length > 0 
+          ? bucket.responses.reduce((sum, time) => sum + time, 0) / bucket.responses.length 
+          : 0;
+        const throughput = bucket.responses.length / bucketSize; // requests per second
+        
+        chartData.push({
+          timestamp: timestamp.toLocaleTimeString(),
+          responseTime: Math.round(avgResponseTime || 0),
+          throughput: Math.round((throughput || 0) * 10) / 10, // Round to 1 decimal
+          errors: bucket.errors || 0
+        });
+      }
+      
+      return chartData.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    } catch (error) {
+      console.error('Error generating chart data:', error);
+      return [];
     }
-    
-    return chartData.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
   }
 
   getTransactionBreakdown() {
