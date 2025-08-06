@@ -45,6 +45,10 @@ export interface PerformanceMetrics {
   p90ResponseTime: number;
   p95ResponseTime: number;
   p99ResponseTime: number;
+  transactionsPerSecond: number;
+  testDuration: number;
+  avgConnectTime: number;
+  avgLatency: number;
 }
 
 export interface ChartDataPoint {
@@ -52,6 +56,15 @@ export interface ChartDataPoint {
   responseTime: number;
   throughput: number;
   errors: number;
+  minResponseTime: number;
+  maxResponseTime: number;
+  p90ResponseTime: number;
+  p95ResponseTime: number;
+  p99ResponseTime: number;
+  successRate: number;
+  avgConnectTime: number;
+  avgLatency: number;
+  bandwidth: number;
 }
 
 export class JTLParser {
@@ -281,19 +294,23 @@ export class JTLParser {
     
     if (this.records.length === 0) {
       console.log('No records found, returning zero metrics');
-      return {
-        avgResponseTime: 0,
-        maxResponseTime: 0,
-        minResponseTime: 0,
-        throughput: 0,
-        errorRate: 0,
-        totalRequests: 0,
-        successfulRequests: 0,
-        failedRequests: 0,
-        p90ResponseTime: 0,
-        p95ResponseTime: 0,
-        p99ResponseTime: 0
-      };
+        return {
+          avgResponseTime: 0,
+          maxResponseTime: 0,
+          minResponseTime: 0,
+          throughput: 0,
+          errorRate: 0,
+          totalRequests: 0,
+          successfulRequests: 0,
+          failedRequests: 0,
+          p90ResponseTime: 0,
+          p95ResponseTime: 0,
+          p99ResponseTime: 0,
+          transactionsPerSecond: 0,
+          testDuration: 0,
+          avgConnectTime: 0,
+          avgLatency: 0
+        };
     }
 
     try {
@@ -327,7 +344,11 @@ export class JTLParser {
           failedRequests: this.records.length,
           p90ResponseTime: 0,
           p95ResponseTime: 0,
-          p99ResponseTime: 0
+          p99ResponseTime: 0,
+          transactionsPerSecond: 0,
+          testDuration: 0,
+          avgConnectTime: 0,
+          avgLatency: 0
         };
       }
 
@@ -348,6 +369,15 @@ export class JTLParser {
       const testDuration = timestamps.length > 1 
         ? (Math.max(...timestamps) - Math.min(...timestamps)) / 1000 
         : 1; // Default to 1 second if no valid duration
+
+      // Calculate additional metrics
+      const connectTimes = this.records
+        .map(r => r.latency || 0)
+        .filter(time => time >= 0);
+      
+      const latencies = this.records
+        .map(r => r.latency || 0)
+        .filter(time => time >= 0);
       
       const metrics = {
         avgResponseTime: Math.round(responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length),
@@ -360,7 +390,11 @@ export class JTLParser {
         failedRequests,
         p90ResponseTime: Math.round(this.calculatePercentile(sortedResponseTimes, 90)),
         p95ResponseTime: Math.round(this.calculatePercentile(sortedResponseTimes, 95)),
-        p99ResponseTime: Math.round(this.calculatePercentile(sortedResponseTimes, 99))
+        p99ResponseTime: Math.round(this.calculatePercentile(sortedResponseTimes, 99)),
+        transactionsPerSecond: Math.round((testDuration > 0 ? this.records.length / testDuration : 0) * 100) / 100,
+        testDuration: Math.round(testDuration * 100) / 100,
+        avgConnectTime: connectTimes.length > 0 ? Math.round(connectTimes.reduce((sum, time) => sum + time, 0) / connectTimes.length) : 0,
+        avgLatency: latencies.length > 0 ? Math.round(latencies.reduce((sum, time) => sum + time, 0) / latencies.length) : 0
       };
       
       console.log('Calculated metrics:', metrics);
@@ -380,7 +414,11 @@ export class JTLParser {
         failedRequests: 0,
         p90ResponseTime: 0,
         p95ResponseTime: 0,
-        p99ResponseTime: 0
+        p99ResponseTime: 0,
+        transactionsPerSecond: 0,
+        testDuration: 0,
+        avgConnectTime: 0,
+        avgLatency: 0
       };
     }
   }
@@ -420,12 +458,21 @@ export class JTLParser {
           timestamp: new Date(minTimestamp).toLocaleTimeString(),
           responseTime: Math.round(validRecords[0].elapsed),
           throughput: validRecords.length,
-          errors: validRecords.filter(r => !r.success).length
+          errors: validRecords.filter(r => !r.success).length,
+          minResponseTime: Math.round(validRecords[0].elapsed),
+          maxResponseTime: Math.round(validRecords[0].elapsed),
+          p90ResponseTime: Math.round(validRecords[0].elapsed),
+          p95ResponseTime: Math.round(validRecords[0].elapsed),
+          p99ResponseTime: Math.round(validRecords[0].elapsed),
+          successRate: 100,
+          avgConnectTime: validRecords[0].latency || 0,
+          avgLatency: validRecords[0].latency || 0,
+          bandwidth: (validRecords[0].bytes || 0) / bucketSize
         }];
       }
 
       const bucketDuration = bucketSize * 1000; // Convert to milliseconds
-      const buckets: Map<number, { responses: number[], errors: number }> = new Map();
+      const buckets: Map<number, { responses: number[], errors: number, connectTimes: number[], latencies: number[], bytes: number[] }> = new Map();
       
       // Group records into time buckets
       validRecords.forEach(record => {
@@ -436,11 +483,14 @@ export class JTLParser {
         if (bucketKey < 0 || !isFinite(bucketKey)) return;
         
         if (!buckets.has(bucketKey)) {
-          buckets.set(bucketKey, { responses: [], errors: 0 });
+          buckets.set(bucketKey, { responses: [], errors: 0, connectTimes: [], latencies: [], bytes: [] });
         }
         
         const bucket = buckets.get(bucketKey)!;
         bucket.responses.push(record.elapsed);
+        bucket.connectTimes.push(record.latency || 0);
+        bucket.latencies.push(record.latency || 0);
+        bucket.bytes.push(record.bytes || 0);
         if (!record.success) {
           bucket.errors++;
         }
@@ -458,11 +508,34 @@ export class JTLParser {
           : 0;
         const throughput = bucket.responses.length / bucketSize; // requests per second
         
+        // Calculate additional metrics for the bucket
+        const sortedResponses = [...bucket.responses].sort((a, b) => a - b);
+        const successCount = bucket.responses.length - bucket.errors;
+        const successRate = bucket.responses.length > 0 ? (successCount / bucket.responses.length) * 100 : 0;
+        const avgConnectTime = bucket.connectTimes.length > 0 
+          ? bucket.connectTimes.reduce((sum, time) => sum + time, 0) / bucket.connectTimes.length 
+          : 0;
+        const avgLatency = bucket.latencies.length > 0 
+          ? bucket.latencies.reduce((sum, time) => sum + time, 0) / bucket.latencies.length 
+          : 0;
+        const bandwidth = bucket.bytes.length > 0 
+          ? bucket.bytes.reduce((sum, bytes) => sum + bytes, 0) / bucketSize / 1024 // KB/s
+          : 0;
+        
         chartData.push({
           timestamp: timestamp.toLocaleTimeString(),
           responseTime: Math.round(avgResponseTime || 0),
-          throughput: Math.round((throughput || 0) * 10) / 10, // Round to 1 decimal
-          errors: bucket.errors || 0
+          throughput: Math.round((throughput || 0) * 10) / 10,
+          errors: bucket.errors || 0,
+          minResponseTime: Math.round(sortedResponses[0] || 0),
+          maxResponseTime: Math.round(sortedResponses[sortedResponses.length - 1] || 0),
+          p90ResponseTime: Math.round(this.calculatePercentile(sortedResponses, 90)),
+          p95ResponseTime: Math.round(this.calculatePercentile(sortedResponses, 95)),
+          p99ResponseTime: Math.round(this.calculatePercentile(sortedResponses, 99)),
+          successRate: Math.round(successRate * 100) / 100,
+          avgConnectTime: Math.round(avgConnectTime),
+          avgLatency: Math.round(avgLatency),
+          bandwidth: Math.round(bandwidth * 100) / 100
         });
       }
       

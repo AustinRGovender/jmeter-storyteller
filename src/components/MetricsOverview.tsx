@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Clock, Zap, AlertTriangle, CheckCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Clock, Zap, AlertTriangle, CheckCircle, Timer, Activity, Gauge } from "lucide-react";
 
 interface MetricCardProps {
   title: string;
@@ -57,6 +57,11 @@ interface PerformanceMetrics {
   errorRate: number;
   totalRequests: number;
   successfulRequests: number;
+  transactionsPerSecond: number;
+  testDuration: number;
+  p90ResponseTime: number;
+  p99ResponseTime: number;
+  avgConnectTime: number;
 }
 
 interface MetricsOverviewProps {
@@ -76,7 +81,7 @@ export const MetricsOverview = ({ metrics }: MetricsOverviewProps) => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <MetricCard
         title="Average Response Time"
         value={formatDuration(metrics.avgResponseTime)}
@@ -99,6 +104,13 @@ export const MetricsOverview = ({ metrics }: MetricsOverviewProps) => {
       />
       
       <MetricCard
+        title="Transactions Per Second"
+        value={`${metrics.transactionsPerSecond.toFixed(1)} TPS`}
+        icon={<Activity className="w-4 h-4" />}
+        color="success"
+      />
+      
+      <MetricCard
         title="Error Rate"
         value={`${metrics.errorRate.toFixed(2)}%`}
         icon={<AlertTriangle className="w-4 h-4" />}
@@ -106,17 +118,24 @@ export const MetricsOverview = ({ metrics }: MetricsOverviewProps) => {
       />
       
       <MetricCard
-        title="Total Requests"
-        value={metrics.totalRequests.toLocaleString()}
-        icon={<TrendingUp className="w-4 h-4" />}
-        color="info"
+        title="90th Percentile"
+        value={formatDuration(metrics.p90ResponseTime)}
+        icon={<Gauge className="w-4 h-4" />}
+        color="warning"
       />
       
       <MetricCard
-        title="Successful Requests"
-        value={metrics.successfulRequests.toLocaleString()}
-        icon={<CheckCircle className="w-4 h-4" />}
-        color="success"
+        title="99th Percentile"
+        value={formatDuration(metrics.p99ResponseTime)}
+        icon={<Gauge className="w-4 h-4" />}
+        color="error"
+      />
+      
+      <MetricCard
+        title="Test Duration"
+        value={`${metrics.testDuration.toFixed(1)}s`}
+        icon={<Timer className="w-4 h-4" />}
+        color="info"
       />
     </div>
   );

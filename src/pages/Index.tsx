@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { FileDropZone } from "@/components/FileDropZone";
 import { MetricsOverview } from "@/components/MetricsOverview";
 import { PerformanceChart } from "@/components/PerformanceChart";
+import { ChartSelector, ChartConfig } from "@/components/ChartSelector";
 import { TransactionTable } from "@/components/TransactionTable";
 import { ExportButton } from "@/components/ExportButton";
 import { JTLParser } from "@/utils/jtlParser";
@@ -12,6 +13,17 @@ const Index = () => {
   const [parser, setParser] = useState<JTLParser | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  const [availableCharts, setAvailableCharts] = useState<ChartConfig[]>([
+    { id: 'response-time', title: 'Response Time Over Time', type: 'response-time', category: 'Response Time', enabled: true },
+    { id: 'throughput', title: 'Throughput Over Time', type: 'throughput', category: 'Performance', enabled: true },
+    { id: 'errors', title: 'Errors Over Time', type: 'errors', category: 'Error Analysis', enabled: true },
+    { id: 'percentiles', title: 'Response Time Percentiles', type: 'percentiles', category: 'Response Time', enabled: false },
+    { id: 'min-max-avg', title: 'Min/Max/Avg Response Time', type: 'min-max-avg', category: 'Response Time', enabled: false },
+    { id: 'success-rate', title: 'Success Rate Over Time', type: 'success-rate', category: 'Error Analysis', enabled: false },
+    { id: 'bandwidth', title: 'Bandwidth Utilization', type: 'bandwidth', category: 'Performance', enabled: false },
+    { id: 'connect-latency', title: 'Connection Time vs Latency', type: 'connect-latency', category: 'Performance', enabled: false }
+  ]);
 
   const handleFileUpload = async (file: File) => {
     setIsProcessing(true);
@@ -72,10 +84,19 @@ const Index = () => {
       return {
         avgResponseTime: 0,
         maxResponseTime: 0,
+        minResponseTime: 0,
         throughput: 0,
         errorRate: 0,
         totalRequests: parser.getRecords().length,
-        successfulRequests: 0
+        successfulRequests: 0,
+        failedRequests: parser.getRecords().length,
+        p90ResponseTime: 0,
+        p95ResponseTime: 0,
+        p99ResponseTime: 0,
+        transactionsPerSecond: 0,
+        testDuration: 0,
+        avgConnectTime: 0,
+        avgLatency: 0
       };
     }
   }, [parser?.getRecords().length]); // Use records length instead of parser instance
@@ -192,26 +213,30 @@ const Index = () => {
         {/* Metrics Overview */}
         {metrics && <MetricsOverview metrics={metrics} />}
 
+        {/* Chart Selection */}
+        <ChartSelector 
+          charts={availableCharts}
+          onChartsChange={setAvailableCharts}
+        />
+
         {/* Charts */}
         {chartData && chartData.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <PerformanceChart 
-              data={chartData} 
-              title="Response Time Over Time" 
-              type="response-time" 
-            />
-            <PerformanceChart 
-              data={chartData} 
-              title="Throughput Over Time" 
-              type="throughput" 
-            />
-            <div className="lg:col-span-2">
-              <PerformanceChart 
-                data={chartData} 
-                title="Errors Over Time" 
-                type="errors" 
-              />
-            </div>
+            {availableCharts
+              .filter(chart => chart.enabled)
+              .map(chart => (
+                <div 
+                  key={chart.id} 
+                  className={chart.type === 'errors' || chart.type === 'min-max-avg' ? 'lg:col-span-2' : ''}
+                >
+                  <PerformanceChart 
+                    data={chartData} 
+                    title={chart.title} 
+                    type={chart.type as any}
+                  />
+                </div>
+              ))
+            }
           </div>
         )}
 
