@@ -10,7 +10,6 @@ export const Navbar = () => {
   const location = useLocation();
 
   const navItems = [
-    { name: "Home", href: "/", icon: Home },
     { name: "Analyzer", href: "/", icon: BarChart3 },
   ];
 
