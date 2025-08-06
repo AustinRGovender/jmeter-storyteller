@@ -102,7 +102,7 @@ const Index = () => {
 
   if (!parser) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background">
         {/* Hero Section */}
         <div className="bg-gradient-hero text-white">
           <div className="container mx-auto px-6 py-16">
@@ -163,7 +163,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       {/* Header */}
       <div className="bg-gradient-primary text-primary-foreground">
         <div className="container mx-auto px-6 py-8">
