@@ -285,34 +285,75 @@ export class JTLParser {
       };
     }
 
-    const responseTimes = this.records.map(r => r.elapsed);
-    const successfulRequests = this.records.filter(r => r.success).length;
-    const failedRequests = this.records.length - successfulRequests;
-    
-    // Sort response times for percentile calculations
-    const sortedResponseTimes = [...responseTimes].sort((a, b) => a - b);
-    
-    const testDuration = (Math.max(...this.records.map(r => r.timestamp)) - 
-                         Math.min(...this.records.map(r => r.timestamp))) / 1000; // Convert to seconds
-    
-    return {
-      avgResponseTime: responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length,
-      maxResponseTime: Math.max(...responseTimes),
-      minResponseTime: Math.min(...responseTimes),
-      throughput: testDuration > 0 ? this.records.length / testDuration : 0,
-      errorRate: (failedRequests / this.records.length) * 100,
-      totalRequests: this.records.length,
-      successfulRequests,
-      failedRequests,
-      p90ResponseTime: this.calculatePercentile(sortedResponseTimes, 90),
-      p95ResponseTime: this.calculatePercentile(sortedResponseTimes, 95),
-      p99ResponseTime: this.calculatePercentile(sortedResponseTimes, 99)
-    };
+    try {
+      const responseTimes = this.records.map(r => r.elapsed).filter(time => !isNaN(time) && time >= 0);
+      
+      if (responseTimes.length === 0) {
+        return {
+          avgResponseTime: 0,
+          maxResponseTime: 0,
+          minResponseTime: 0,
+          throughput: 0,
+          errorRate: 100,
+          totalRequests: this.records.length,
+          successfulRequests: 0,
+          failedRequests: this.records.length,
+          p90ResponseTime: 0,
+          p95ResponseTime: 0,
+          p99ResponseTime: 0
+        };
+      }
+
+      const successfulRequests = this.records.filter(r => r.success).length;
+      const failedRequests = this.records.length - successfulRequests;
+      
+      // Sort response times for percentile calculations
+      const sortedResponseTimes = [...responseTimes].sort((a, b) => a - b);
+      
+      const timestamps = this.records.map(r => r.timestamp).filter(t => !isNaN(t) && t > 0);
+      const testDuration = timestamps.length > 1 
+        ? (Math.max(...timestamps) - Math.min(...timestamps)) / 1000 
+        : 1; // Default to 1 second if no valid duration
+      
+      return {
+        avgResponseTime: responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length,
+        maxResponseTime: Math.max(...responseTimes),
+        minResponseTime: Math.min(...responseTimes),
+        throughput: testDuration > 0 ? this.records.length / testDuration : 0,
+        errorRate: (failedRequests / this.records.length) * 100,
+        totalRequests: this.records.length,
+        successfulRequests,
+        failedRequests,
+        p90ResponseTime: this.calculatePercentile(sortedResponseTimes, 90),
+        p95ResponseTime: this.calculatePercentile(sortedResponseTimes, 95),
+        p99ResponseTime: this.calculatePercentile(sortedResponseTimes, 99)
+      };
+    } catch (error) {
+      console.error('Error calculating metrics:', error);
+      return {
+        avgResponseTime: 0,
+        maxResponseTime: 0,
+        minResponseTime: 0,
+        throughput: 0,
+        errorRate: 0,
+        totalRequests: 0,
+        successfulRequests: 0,
+        failedRequests: 0,
+        p90ResponseTime: 0,
+        p95ResponseTime: 0,
+        p99ResponseTime: 0
+      };
+    }
   }
 
   private calculatePercentile(sortedArray: number[], percentile: number): number {
+    if (!sortedArray || sortedArray.length === 0) return 0;
+    if (percentile <= 0) return sortedArray[0];
+    if (percentile >= 100) return sortedArray[sortedArray.length - 1];
+    
     const index = Math.ceil((percentile / 100) * sortedArray.length) - 1;
-    return sortedArray[Math.max(0, index)] || 0;
+    const safeIndex = Math.max(0, Math.min(index, sortedArray.length - 1));
+    return sortedArray[safeIndex] || 0;
   }
 
   generateChartData(bucketSize: number = 30): ChartDataPoint[] {

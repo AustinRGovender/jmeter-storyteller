@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { FileDropZone } from "@/components/FileDropZone";
 import { MetricsOverview } from "@/components/MetricsOverview";
 import { PerformanceChart } from "@/components/PerformanceChart";
@@ -63,9 +63,9 @@ const Index = () => {
     }
   };
 
-  const metrics = parser?.calculateMetrics();
-  const chartData = parser?.generateChartData();
-  const transactions = parser?.getTransactionBreakdown() || [];
+  const metrics = useMemo(() => parser?.calculateMetrics(), [parser]);
+  const chartData = useMemo(() => parser?.generateChartData(), [parser]);
+  const transactions = useMemo(() => parser?.getTransactionBreakdown() || [], [parser]);
 
   if (!parser) {
     return (
