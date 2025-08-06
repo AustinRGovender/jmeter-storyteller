@@ -1,19 +1,17 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { BarChart3, Menu, X, Home, Upload, FileText } from "lucide-react";
+import { BarChart3, Menu, X, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useApp } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { parser, handleReset } = useApp();
 
-  const navItems = [
-    { name: "Analyzer", href: "/", icon: BarChart3 },
-  ];
-
-  const isActive = (href: string) => location.pathname === href;
+  const hasData = !!parser;
 
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-background/80">
@@ -28,28 +26,34 @@ export const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors",
-                  isActive(item.href)
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                )}
+          <div className="hidden md:flex items-center space-x-4">
+            {hasData && (
+              <Button
+                variant="outline"
+                onClick={handleReset}
+                className="flex items-center space-x-2"
               >
-                <item.icon className="w-4 h-4" />
-                <span>{item.name}</span>
-              </Link>
-            ))}
+                <RotateCcw className="w-4 h-4" />
+                <span>Reset</span>
+              </Button>
+            )}
             <ThemeToggle />
           </div>
 
           {/* Mobile menu button and theme toggle */}
           <div className="flex items-center space-x-2 md:hidden">
             <ThemeToggle />
+            {hasData && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="flex items-center space-x-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Reset</span>
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -65,25 +69,20 @@ export const Navbar = () => {
         </div>
 
         {/* Mobile Navigation */}
-        {isMobileMenuOpen && (
+        {isMobileMenuOpen && hasData && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    "flex items-center space-x-2 px-4 py-3 rounded-md text-sm font-medium transition-colors",
-                    isActive(item.href)
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  )}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.name}</span>
-                </Link>
-              ))}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  handleReset();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center space-x-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Reset</span>
+              </Button>
             </div>
           </div>
         )}

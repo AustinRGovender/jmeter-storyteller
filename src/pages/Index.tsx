@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { FileDropZone } from "@/components/FileDropZone";
 import { MetricsOverview } from "@/components/MetricsOverview";
 import { PerformanceChart } from "@/components/PerformanceChart";
@@ -6,14 +6,12 @@ import { ChartSelector, ChartConfig } from "@/components/ChartSelector";
 import { TransactionTable } from "@/components/TransactionTable";
 import { TopErrorsSection } from "@/components/TopErrorsSection";
 import { ExportButton } from "@/components/ExportButton";
-import { JTLParser } from "@/utils/jtlParser";
-import { toast } from "@/hooks/use-toast";
+import { useApp } from "@/contexts/AppContext";
 import { BarChart3, TrendingUp, FileText } from "lucide-react";
+import { useState } from "react";
 
 const Index = () => {
-  const [parser, setParser] = useState<JTLParser | null>(null);
-  const [fileName, setFileName] = useState<string>("");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { parser, fileName, isProcessing, handleFileUpload } = useApp();
   
   const [availableCharts, setAvailableCharts] = useState<ChartConfig[]>([
     { id: 'response-time', title: 'Response Time Over Time', type: 'response-time', category: 'Response Time', enabled: true },
@@ -25,56 +23,6 @@ const Index = () => {
     { id: 'bandwidth', title: 'Bandwidth Utilization', type: 'bandwidth', category: 'Performance', enabled: false },
     { id: 'connect-latency', title: 'Connection Time vs Latency', type: 'connect-latency', category: 'Performance', enabled: false }
   ]);
-
-  const handleFileUpload = async (file: File) => {
-    setIsProcessing(true);
-    setFileName(file.name);
-    
-    try {
-      const content = await file.text();
-      const newParser = new JTLParser();
-      const parseResult = newParser.parseFile(content);
-      
-      if (!parseResult.success) {
-        const debugInfo = parseResult.debugInfo;
-        console.log('Parse failed. Debug info:', debugInfo);
-        
-        toast({
-          title: "Invalid File",
-          description: parseResult.error || "No valid performance data found in the uploaded file.",
-          variant: "destructive",
-        });
-        
-        // Show detailed debug information in console
-        console.log(`File parsing details:
-          - Total lines: ${debugInfo.totalLines}
-          - Header: ${debugInfo.headerLine}
-          - Detected delimiter: "${debugInfo.detectedDelimiter}"
-          - Detected headers: ${debugInfo.detectedHeaders.join(', ')}
-          - Parsed records: ${debugInfo.parsedRecords}
-          - Valid records: ${debugInfo.validRecords}
-          - Sample record:`, debugInfo.sampleRecord);
-        
-        setIsProcessing(false);
-        return;
-      }
-      
-      setParser(newParser);
-      toast({
-        title: "File Processed Successfully",
-        description: `Loaded ${parseResult.records.length.toLocaleString()} performance records from ${file.name}`,
-      });
-    } catch (error) {
-      console.error('File processing error:', error);
-      toast({
-        title: "Processing Error",
-        description: "Failed to process the JTL file. Please ensure it's a valid JMeter results file.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const metrics = useMemo(() => {
     if (!parser) return null;
